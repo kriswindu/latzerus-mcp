@@ -1,50 +1,169 @@
+<div align="center">
+
+<img src="https://www.latzerus.ch/images/logo-header.png" alt="Latzerus" width="260">
+
 # Latzerus MCP Server
 
-[![smithery badge](https://smithery.ai/badge/cllatzi/latzerus-mcp)](https://smithery.ai/servers/cllatzi/latzerus-mcp)
+**Swiss B2B sales and everyday-AI know-how — inside your AI assistant.**
+113 free 5-minute learning modules from [latzerus.ch](https://www.latzerus.ch), one endpoint, no account.
 
-The **Latzerus MCP Server** acts as an intelligent interface to the comprehensive Swiss knowledge base [latzerus.ch](https://www.latzerus.ch) for B2B sales and the practical application of artificial intelligence in everyday work. True to the principle of "Smart, not hard," the server provides immediately actionable solutions and measurable time savings directly within your AI assistant.
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-ch.latzerus%2Flernbereich-e0a93a?style=flat-square)](https://registry.modelcontextprotocol.io/v0/servers?search=ch.latzerus)
+[![Protocol](https://img.shields.io/badge/MCP-2025--06--18-0d1117?style=flat-square)](https://modelcontextprotocol.io)
+[![Transport](https://img.shields.io/badge/transport-streamable%20HTTP-0d1117?style=flat-square)](https://modelcontextprotocol.io/docs/concepts/transports)
+[![Auth](https://img.shields.io/badge/auth-none%20needed-22B566?style=flat-square)](#-privacy--safety)
+[![Modules](https://img.shields.io/badge/modules-113-3B82F6?style=flat-square)](https://www.latzerus.ch/lernen/)
 
-The server operates via a **Streamable HTTP endpoint**. It is completely free, open, and requires no account or API key.
+```
+https://mcp.latzerus.ch/mcp
+```
 
-## 🛠 Features & Tools
-This server provides AI assistants (like Claude, ChatGPT, Cursor, etc.) with four read-only tools to access over 100 field-tested 5-minute learning modules:
+</div>
 
-* **`lernmodule_suchen`**: Searches all modules by keywords and returns the title, topic, URL, and a short description.
-* **`lernmodul_lesen`**: Retrieves a specific module in full text, including key points, practical steps, common mistakes, and FAQs.
-* **`lernmodule_uebersicht`**: Lists all available modules, neatly grouped by the four main themes (Sales & Communication, AI in everyday work, Career, Wild Topics).
-* **`ueber_latzerus`**: Provides background information about the project, Christoph Latzer, the topics, and contact details.
+---
 
-## 🎯 Primary Use Cases
-* **Sales & Cold Calling:** Get concrete argumentation frameworks, strategies for handling objections (e.g., "too expensive"), and closing tactics on demand.
-* **AI & Compliance:** Access data protection-compliant recommendations (DSGVO/DSG) and setup assistance for both cloud AI and local models (Ollama, Mistral).
-* **Career Positioning:** Honest, buzzword-free guidance for professional assessments and impactful job applications.
+## What this is
 
-## 🚀 Getting Started
+Latzerus is the knowledge project of **Christoph Latzer** (St. Gallen / Zurich, Switzerland): over a
+hundred short, field-tested lessons on B2B selling, on using AI at work without handing your data away,
+and on career positioning. *Smart not hard — help people help themselves.*
 
-The server uses standard Streamable HTTP (`https://mcp.latzerus.ch/mcp`). Here is how you can connect it to popular clients:
+This server puts that library one question away. Ask your assistant *"how do I answer «too expensive»?"*
+and it reads the actual module instead of guessing.
 
-### Claude Desktop
-1. Open Settings -> **Connectors**.
-2. Click **Add custom connector**.
-3. Name: `Latzerus`
-4. URL: `https://mcp.latzerus.ch/mcp`
-5. Save (Leave OAuth Client ID and Secret empty).
+> 🇩🇪 The modules are written in German. The tools are named in German too — your assistant handles that.
 
-### Cursor (or VS Code)
-Create or edit your `mcp.json` file (e.g., `.cursor/mcp.json` or `.vscode/mcp.json`):
+**Free, read-only, no sign-up, no API key, no cookies.** It runs as a single Cloudflare Worker that reads
+the site's public `llms.txt` and `llms-full.txt` — there is no database and no user data anywhere in it.
+
+## 🛠 Tools
+
+| Tool | What it does |
+|---|---|
+| `lernmodule_suchen` | Keyword search across all modules → title, cluster, URL, summary, relevance score. Understands paraphrases, synonyms, singular/plural and typos — you don't need the exact wording of a title. Returns `structuredContent`, so clients don't have to parse prose. |
+| `lernmodul_lesen` | One module in full: key points, main part, practical steps, typical mistakes, FAQ. Takes the slug or the URL. |
+| `lernmodule_uebersicht` | All modules grouped by theme. Optional `cluster` parameter to fetch just one theme and save tokens. |
+| `ueber_latzerus` | Background on the project, the four themes, the tools used, and contact details. |
+
+The four themes: **Vertrieb & Kommunikation** (43) · **KI im Arbeitsalltag** (42) ·
+**Karriere-Werkstatt** (21) · **Wilde Themen** (7).
+
+## 🎯 What people use it for
+
+- **Cold calling & closing** — argumentation frameworks, objection handling («too expensive», «we already
+  have a supplier», «I'll get back to you»), and how to ask for the order without begging for it.
+- **AI without the data leak** — what belongs in a cloud model and what doesn't, GDPR/DSG-aware workflows,
+  and setting up local models with Ollama, from «which machine do I need» to a RAG chatbot on your own handbook.
+- **Career positioning** — honest self-assessment, reading job ads the way HR means them, and a USP that
+  survives contact with reality. No buzzwords.
+
+## 🚀 Connect it
+
+### Claude Desktop / Claude.ai
+Settings → **Connectors** → **Add custom connector** → Name `Latzerus`, URL `https://mcp.latzerus.ch/mcp`.
+Leave OAuth client ID and secret empty.
+
+### Claude Code
+```bash
+claude mcp add --transport http latzerus https://mcp.latzerus.ch/mcp
+```
+
+### Cursor — `.cursor/mcp.json`
 ```json
 {
   "mcpServers": {
     "latzerus": {
-      "url": "[https://mcp.latzerus.ch/mcp](https://mcp.latzerus.ch/mcp)"
+      "url": "https://mcp.latzerus.ch/mcp"
     }
   }
 }
 ```
-*(Note: For VS Code use `"servers"` instead of `"mcpServers"` and add `"type": "http"`).*
 
-For instructions on other clients like ChatGPT, Open WebUI, AnythingLLM, or LM Studio, please visit the [official Latzerus MCP Setup Guide](https://www.latzerus.ch/mcp/).
+### VS Code — `.vscode/mcp.json`
+```json
+{
+  "servers": {
+    "latzerus": {
+      "type": "http",
+      "url": "https://mcp.latzerus.ch/mcp"
+    }
+  }
+}
+```
 
-## 📜 License & Usage
-Reading, citing, and summarizing the content is highly encouraged. Please attribute the source as: `"Christoph Latzer, Latzerus — https://www.latzerus.ch/"`.
-No tracking cookies are used. The server is strictly read-only and cannot alter any data on your machine.
+### AnythingLLM, Open WebUI, LM Studio, ChatGPT
+Step-by-step with copy-paste snippets: **[latzerus.ch/mcp](https://www.latzerus.ch/mcp/)**.
+(AnythingLLM needs `"type": "streamable"`. The paths `/sse` and `/see` do not exist — the endpoint is `/mcp`.)
+
+### Try it without a client
+```bash
+curl -s https://mcp.latzerus.ch/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+       "params":{"name":"lernmodule_suchen","arguments":{"suchbegriff":"Kunde will billiger"}}}'
+```
+
+## ⚙️ How it works
+
+```mermaid
+flowchart LR
+  A["AI client<br/>(Claude, ChatGPT, Cursor …)"] -->|JSON-RPC / HTTP POST| B["Cloudflare Worker<br/>stateless, no auth"]
+  B -->|cached 1 h| C["latzerus.ch/llms.txt<br/>index"]
+  B -->|cached 1 h| D["latzerus.ch/llms-full.txt<br/>full texts"]
+```
+
+The site publishes its own content as `llms.txt` and `llms-full.txt`; the worker parses those on the fly,
+so a new module is searchable the moment it is online. Nothing is duplicated, nothing gets stale.
+
+**Search, in short:** queries and index are normalised the same way (umlauts, stemming), matched by exact
+token, prefix and a one-edit typo tolerance, expanded through 45 hand-kept synonym classes, then scored by
+field — title counts six times as much as body text — with a coverage factor and a relevance threshold, so
+a weak match disappears under a clear one. Full texts are only pulled in when the keyword pass finds too
+little. Typical search: **70–115 ms**.
+
+Discovery: [`/.well-known/mcp/server.json`](https://mcp.latzerus.ch/.well-known/mcp/server.json) ·
+listed in the official MCP Registry as **`ch.latzerus/lernbereich`**.
+
+## 📦 This repository
+
+| File | |
+|---|---|
+| `worker.js` | the whole server — one file, no dependencies, no build step. Paste it into the Cloudflare dashboard and deploy. |
+| `mcp-eval.mjs` + `mcp-eval-set.json` | 34 search cases with expected results (`--live` runs them against the deployed server). Run before every deploy. |
+| `mcp-smoke.mjs` | handshake, all four tools, error codes and edge cases — offline, against the worker file. |
+| `mcp-volltext-check.mjs` | does every module have its anchor in `llms-full.txt`? |
+| `mcp-lesen-check.mjs` | calls `lernmodul_lesen` for every slug and verifies it returns the right module. |
+
+```bash
+node mcp-eval.mjs          # search quality, local logic against the live index
+node mcp-smoke.mjs         # protocol, tools, error handling
+node mcp-eval.mjs --live   # same 34 cases against https://mcp.latzerus.ch/mcp
+```
+
+Requires Node 22+. No install, no dependencies.
+
+## 🔒 Privacy & safety
+
+Read-only by design: the four tools return text, nothing else. No authentication, because there is nothing
+to authenticate — every byte it serves is public on latzerus.ch anyway. No cookies, no tracking, no
+logging of what you ask. It cannot touch anything on your machine.
+
+## 📜 License & attribution
+
+The **content** of the learning modules belongs to Christoph Latzer. Reading, quoting and summarising it is
+explicitly welcome — please name the source:
+
+> Christoph Latzer, Latzerus — https://www.latzerus.ch/
+
+The **code** in this repository is MIT licensed (see `LICENSE`). *Latzerus* is a registered Swiss trademark
+(Swissreg CH 817140); the licence covers the code, not the name or the logo.
+
+---
+
+<div align="center">
+
+**[latzerus.ch](https://www.latzerus.ch)** · [All modules](https://www.latzerus.ch/lernen/) ·
+[Setup guide](https://www.latzerus.ch/mcp/) · [Contact](https://www.latzerus.ch/contact/)
+
+<sub>A knowledge project from Eastern Switzerland. Smart not hard · Pareto · Help people help themselves · the 5-minute rule.</sub>
+
+</div>
