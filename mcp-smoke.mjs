@@ -19,6 +19,16 @@ console.log("--- initialize ---");
 let r = await post({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18" } });
 console.log(r.status, r.json.result.protocolVersion, JSON.stringify(r.json.result.serverInfo));
 
+console.log("\n--- Protokoll-Verhandlung ---");
+for (const v of ["2025-03-26", "2024-11-05", "1999-01-01", undefined]) {
+  const res = await post({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: v } });
+  console.log(`  angefragt ${v ?? "(keine)"} → ${res.json.result.protocolVersion}`);
+}
+{
+  const res = await worker.fetch(new Request("https://mcp.latzerus.ch/mcp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }) }));
+  console.log(`  Header MCP-Protocol-Version: ${res.headers.get("MCP-Protocol-Version")} (erwartet 2025-06-18)`);
+}
+
 console.log("\n--- tools/list ---");
 r = await post({ jsonrpc: "2.0", id: 2, method: "tools/list" });
 for (const t of r.json.result.tools) {

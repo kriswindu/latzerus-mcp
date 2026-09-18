@@ -1,5 +1,5 @@
 {
-  "beschreibung": "Eval-Set fuer lernmodule_suchen (Latzerus MCP). faelle = Pflicht, muessen alle bestehen: einer der erwarteten Slugs steht in den Top 3, erwartet [] = es darf nichts kommen. offen = bekannte Grenzen der Wort-Suche, werden nur berichtet.",
+  "beschreibung": "Eval-Set fuer lernmodule_suchen (Latzerus MCP). faelle = Pflicht, muessen alle bestehen: einer der erwarteten Slugs steht in den Top 3, erwartet [] = es darf nichts kommen. offen = bekannte Grenzen der Wort-Suche, werden nur berichtet (erwartet [] dort = keine Erwartung, nur Bericht).",
   "faelle": [
     {
       "frage": "Stammkunden pflegen",
@@ -231,6 +231,40 @@
     {
       "frage": "Bitcoin Kurs Prognose",
       "erwartet": []
+    },
+    {
+      "frage": "Was tun wenn der Kunde nicht zurückruft",
+      "erwartet": [
+        "ich-melde-mich-dann-dranbleiben"
+      ]
+    },
+    {
+      "frage": "cross selling",
+      "erwartet": [
+        "aus-einem-kunden-drei"
+      ]
+    },
+    {
+      "frage": "Gesprächsleitfaden",
+      "erwartet": [
+        "kaltakquise-skript-in-5-minuten"
+      ]
+    },
+    {
+      "frage": "Kann ich ChatGPT für Kundendaten benutzen?",
+      "erwartet": [
+        "welche-daten-niemals-in-die-cloud-ki"
+      ]
+    },
+    {
+      "frage": "Wie bereite ich mich auf ein Vorstellungsgespräch vor?",
+      "erwartet": []
+    },
+    {
+      "frage": "Wie antworte ich, wenn der Kunde sagt, das ist zu teuer?",
+      "erwartet": [
+        "zu-teuer-die-einzige-antwort"
+      ]
     }
   ],
   "offen": [
@@ -247,6 +281,16 @@
       "frage": "Hundefutter guenstig kaufen",
       "erwartet": [],
       "hinweis": "«guenstig» + «kaufen» ziehen die Preis-Module. Harmlos, aber zeigt: generische Synonyme feuern auch ausserhalb der Domaene."
+    },
+    {
+      "frage": "Wie sage ich einem Kunden nein?",
+      "erwartet": [],
+      "hinweis": "Nur Bericht — kein Modul zum Thema Absage an Kunden; «nein» zieht so-verlierst-du-die-angst-vor-dem-nein."
+    },
+    {
+      "frage": "Elektroinstallateur Kundengespräch",
+      "erwartet": [],
+      "hinweis": "Nur Bericht — Branchenwort ohne Modul; «Kundengespräch» landet bei den Kunde-Titeln."
     }
   ]
 }

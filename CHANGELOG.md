@@ -3,6 +3,25 @@
 The server reports its version in `initialize` and in `server.json`; that version is what the
 MCP Registry lists. Dates are the deploy dates.
 
+## Search tuning — 2026-09-18 (server version stays 1.0.1)
+
+Whole-sentence questions hit 14 of 20 after the overhaul; the main cause was that a word found in
+many titles («Kunde», 12 titles) earned the full title weight.
+
+- Title document frequency now damps each search term by `1 / ln(2 + df)` — a word in one title keeps
+  0.91 of its weight, a word in twelve titles 0.38 — so a common word alone no longer lifts a module over
+  the threshold, while a rare one like «Kaufsignal» is practically untouched.
+- Four synonym classes for questions that miss the title vocabulary: cross-/upselling → «aus einem Kunden
+  drei», Leitfaden/Skript, zurückrufen/Rückruf/meldet sich nicht → dranbleiben/nachfassen, and
+  Kundendaten/Personendaten → Datenschutz/Cloud/Daten; plus Firma/Unternehmen/Betrieb.
+- The full-text safety net is tighter: its threshold rises from 0.5 to 1.5 and at most three modules may
+  come from full text alone, so «Vorstellungsgespräch vorbereiten» now returns «nothing found» instead of
+  an unrelated module; forward prefix matching needs six characters.
+- `initialize` negotiates the protocol version: a requested `2025-06-18`, `2025-03-26` or `2024-11-05` is
+  echoed back, anything else gets `2025-06-18`, and every POST response carries `MCP-Protocol-Version`.
+
+Regression suite: 40 cases (34 + 6 sentence questions), plus four reported-only limits.
+
 ## Search overhaul — 2026-09-18 (server version stays 1.0.1)
 
 The old search was a plain word match: «Stammkunden» found nothing because the title says

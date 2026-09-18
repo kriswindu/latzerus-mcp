@@ -43,7 +43,7 @@ the site's public `llms.txt` and `llms-full.txt` — there is no database and no
 
 | Tool | What it does |
 |---|---|
-| `lernmodule_suchen` | Keyword search across all modules → title, cluster, URL, summary, relevance score. Understands paraphrases, synonyms, singular/plural and typos — you don't need the exact wording of a title. Returns `structuredContent`, so clients don't have to parse prose. |
+| `lernmodule_suchen` | Keyword search across all modules → title, cluster, URL, summary, relevance score. Understands synonyms, singular/plural and typos — you don't need the exact wording of a title. Returns `structuredContent`, so clients don't have to parse prose. |
 | `lernmodul_lesen` | One module in full: key points, main part, practical steps, typical mistakes, FAQ. Takes the slug or the URL. |
 | `lernmodule_uebersicht` | All modules grouped by theme. Optional `cluster` parameter to fetch just one theme and save tokens. |
 | `ueber_latzerus` | Background on the project, the four themes, the tools used, and contact details. |
@@ -124,13 +124,14 @@ flowchart LR
 ```
 
 The site publishes its own content as `llms.txt` and `llms-full.txt`; the worker parses those on the fly,
-so a new module is searchable the moment it is online. Nothing is duplicated, nothing gets stale.
+so a new module is searchable within about an hour (edge cache 1 h, isolate cache 10 min). Nothing is duplicated, nothing gets stale.
 
 **Search, in short:** queries and index are normalised the same way (umlauts, stemming), matched by exact
-token, prefix and a one-edit typo tolerance, expanded through 45 hand-kept synonym classes, then scored by
-field — title counts six times as much as body text — with a coverage factor and a relevance threshold, so
-a weak match disappears under a clear one. Full texts are only pulled in when the keyword pass finds too
-little. Typical search: **70–115 ms**.
+token, prefix and a one-edit typo tolerance, expanded through 49 hand-kept synonym classes, then scored by
+field — title counts six times as much as body text — damped by how many titles share a word (a word in
+12 titles counts 0.38, a word in one title 0.91), with a coverage factor and a relevance threshold, so a weak
+match disappears under a clear one. Full texts are only pulled in when the keyword pass finds too little,
+and add at most three modules of their own. Typical search: **70–115 ms**.
 
 Discovery: [`/.well-known/mcp/server.json`](https://mcp.latzerus.ch/.well-known/mcp/server.json) ·
 listed in the official MCP Registry as **`ch.latzerus/lernbereich`**.
@@ -140,8 +141,8 @@ listed in the official MCP Registry as **`ch.latzerus/lernbereich`**.
 | File | |
 |---|---|
 | `worker.js` | the whole server — one file, no dependencies, no build step. Paste it into the Cloudflare dashboard and deploy. |
-| `mcp-eval.mjs` + `mcp-eval-set.json` | 34 search cases with expected results (`--live` runs them against the deployed server). Run before every deploy. |
-| `mcp-smoke.mjs` | handshake, all four tools, error codes and edge cases — offline, against the worker file. |
+| `mcp-eval.mjs` + `mcp-eval-set.json` | 40 search cases with expected results (`--live` runs them against the deployed server). Run before every deploy. |
+| `mcp-smoke.mjs` | handshake, protocol negotiation, all four tools, error codes and edge cases — offline, against the worker file. |
 | `mcp-volltext-check.mjs` | does every module have its anchor in `llms-full.txt`? |
 | `mcp-lesen-check.mjs` | calls `lernmodul_lesen` for every slug and verifies it returns the right module. |
 | `CHANGELOG.md` | what changed and when. |
@@ -149,7 +150,7 @@ listed in the official MCP Registry as **`ch.latzerus/lernbereich`**.
 ```bash
 node mcp-eval.mjs          # search quality, local logic against the live index
 node mcp-smoke.mjs         # protocol, tools, error handling
-node mcp-eval.mjs --live   # same 34 cases against https://mcp.latzerus.ch/mcp
+node mcp-eval.mjs --live   # same 40 cases against https://mcp.latzerus.ch/mcp
 ```
 
 Requires Node 22+. No install, no dependencies.

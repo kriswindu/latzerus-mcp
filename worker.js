@@ -18,16 +18,18 @@
  * Cloudflare dashboard and hit Deploy.
  *
  * Search: query and index are normalised the same way (umlauts, stemming), matched by
- * exact token, prefix and one-edit typo tolerance, expanded through 45 synonym classes,
- * then scored per field (title 6 / tags 4 / slug 2 / summary 2 / cluster 1.5 / full text 0.5)
+ * exact token, prefix and one-edit typo tolerance, expanded through 49 synonym classes,
+ * then scored per field (title 6 / tags 4 / slug 2 / summary 2 / cluster 1.5 / full text 0.5),
+ * damped by title document frequency (a word in 12 titles counts 0.38, a word in one title 0.91),
  * with a coverage factor and a relevance threshold. Full texts join in only when the
- * keyword pass finds fewer than three modules — Cloudflare's free plan allows 10 ms CPU
- * per request, and the parsed index is cached per isolate for 10 minutes.
+ * keyword pass finds fewer than three modules, and add at most three modules of their own —
+ * Cloudflare's free plan allows 10 ms CPU per request, and the parsed index is cached per
+ * isolate for 10 minutes.
  *
  * Before deploying (Node 22+, from this folder):
- *   node mcp-eval.mjs           34 search cases against the live index
- *   node mcp-smoke.mjs          handshake, all four tools, error codes, edge cases
- *   node mcp-eval.mjs --live    the same 34 cases against the deployed server
+ *   node mcp-eval.mjs           40 search cases against the live index
+ *   node mcp-smoke.mjs          handshake, protocol negotiation, all four tools, error codes, edge cases
+ *   node mcp-eval.mjs --live    the same 40 cases against the deployed server
  *
  * Version history: CHANGELOG.md · MIT licensed, see LICENSE.
  * Code comments are in German, like the content this server serves.
@@ -231,7 +233,11 @@ function zerlegeVolltext(full, module) {
 /* ================= Suche ================= */
 /* Stufe 1 (2026-09-18): Wort-Match ersetzt durch Normalisierung + Stemming + Präfix +
  * Tippfehler-Toleranz + Synonym-Klassen + Feld-Gewichtung + Score-Schwelle.
- * Volltext (llms-full.txt) kommt nur dazu, wenn die Keyword-Stufe zu wenig findet. */
+ * Volltext (llms-full.txt) kommt nur dazu, wenn die Keyword-Stufe zu wenig findet.
+ * Search tuning (2026-09-18, gleicher Tag): Dokumentfrequenz-Dämpfung über die Titel («Kunde» steht
+ * in 12 Titeln und hob allein Module über die Schwelle), vier Synonym-Klassen für Satz-Fragen,
+ * Volltext-Auffangnetz enger (Schwelle 1.5, höchstens 3 reine Volltext-Treffer),
+ * Präfix vorwärts erst ab 6 Zeichen. */
 
 const UMLAUT = { "ä": "ae", "ö": "oe", "ü": "ue", "Ä": "ae", "Ö": "oe", "Ü": "ue", "ß": "ss" };
 
@@ -286,7 +292,8 @@ const SYNONYM_KLASSEN = [
   ["sicherheit", "security", "schutz", "risiko", "gefahr"],
   ["automatisierung", "automatisieren", "workflow", "prozess", "pipeline", "n8n"],
   ["zeit", "effizienz", "produktivitaet", "schneller", "sparen", "zeitgewinn", "aufwand"],
-  ["followup", "nachfassen", "dranbleiben", "wiedervorlage", "nachfrage", "erinnerung"],
+  ["followup", "nachfassen", "dranbleiben", "wiedervorlage", "nachfrage", "erinnerung",
+   "zurueckrufen", "zurueckruft", "rueckruf", "melden", "meldet", "antwort"],
   ["gespraech", "gespraechsfuehrung", "dialog", "kommunikation", "frage", "fragetechnik", "zuhoeren"],
   ["praesentation", "pitch", "vortrag", "demo", "folien", "slides"],
   ["karriere", "beruf", "job", "stelle", "stellensuche", "arbeitgeber", "anstellung", "arbeitsmarkt"],
@@ -306,7 +313,12 @@ const SYNONYM_KLASSEN = [
   ["motivation", "antreiber", "haltung", "mindset", "disziplin", "gewohnheit"],
   ["team", "mitarbeiter", "fuehrung", "mitarbeitende", "kollege"],
   ["excel", "tabelle", "liste", "daten", "auswertung"],
-  ["widerspruch", "kritik", "gegenargument", "gegenposition", "devilsadvocate"]
+  ["widerspruch", "kritik", "gegenargument", "gegenposition", "devilsadvocate"],
+  // Search tuning 2026-09-18: Klassen für Satz-Fragen, die am Titel-Vokabular vorbeigehen
+  ["cross", "selling", "crossselling", "upselling", "upsell", "zusatzverkauf", "drei"], // → «aus einem Kunden drei»
+  ["leitfaden", "gespraechsleitfaden", "skript", "script"],
+  ["kundendaten", "personendaten", "datenschutz", "cloud", "daten"],
+  ["firma", "unternehmen", "betrieb", "zielfirma", "organisation"]
 ];
 
 const SYNONYME = (() => {
@@ -351,7 +363,9 @@ const FUZZY_FELDER = { titel: true, tags: true, beschreibung: true, slug: false,
 const Q_EXAKT = 1, Q_PRAEFIX = 0.7, Q_REV = 0.6, Q_FUZZY = 0.5, SYN_FAKTOR = 0.7;
 // Schwellen: MIN_VOLL = alle Suchbegriffe getroffen, MIN_TEIL = nur ein Teil (braucht dann Titel-Niveau),
 // MIN_VOLLTEXT = Treffer, die erst über llms-full.txt dazukommen. REL = relativ zum Bestwert.
-const MIN_VOLL = 2.0, MIN_TEIL = 3.0, MIN_VOLLTEXT = 0.5, MIN_TEIL_VOLLTEXT = 1.5, REL_SCORE = 0.22;
+const MIN_VOLL = 2.0, MIN_TEIL = 3.0, MIN_VOLLTEXT = 1.5, MIN_TEIL_VOLLTEXT = 1.5, REL_SCORE = 0.22;
+// Treffer, die nur aus der Volltext-Stufe stammen (kein Keyword-Treffer), höchstens so viele:
+const MAX_NUR_VOLLTEXT = 3;
 
 function feldIndex(mod) {
   const mk = (s) => {
@@ -373,8 +387,12 @@ function feldQualitaet(feld, gruppe, fuzzyErlaubt) {
   for (const syn of gruppe.syn) if (feld.set.has(syn)) return Q_EXAKT * SYN_FAKTOR;
   if (!feld.arr.length) return 0;
   const q = gruppe.stem;
-  if (q.length >= 4) {
+  // Präfix vorwärts erst ab 6 Zeichen: «berei» (aus «bereite») darf nicht «bereinigst» treffen.
+  // Rückwärts (Kompositum in der Frage, Grundwort im Titel: «Preisgespräch» → «Preis») ab 4.
+  if (q.length >= 6) {
     for (const t of feld.arr) if (t.length >= 4 && t.startsWith(q)) return Q_PRAEFIX;
+  }
+  if (q.length >= 4) {
     for (const t of feld.arr) if (t.length >= 4 && q.startsWith(t)) return Q_REV;
   }
   if (fuzzyErlaubt && q.length >= 6) {
@@ -399,8 +417,32 @@ function queryGruppen(suchbegriff) {
 
 const FELD_REIHE = ["titel", "tags", "slug", "beschreibung", "cluster"];
 
+/* --- Dokumentfrequenz-Dämpfung: in wie vielen Modul-TITELN kommt ein Stamm vor? ---
+ * «Kunde» steht in 12 Titeln und darf allein kein Modul über die Schwelle heben, «Kaufsignal»
+ * (1 Titel) bleibt praktisch ungedämpft. Nur Titel zählen, nicht der Volltext.
+ * Gecacht pro Feldindex (WeakMap) — holeIndex und das Eval-Skript bauen den Index selbst. */
+const DF_CACHE = new WeakMap();
+
+function titelDf(idx) {
+  let df = DF_CACHE.get(idx);
+  if (df) return df;
+  df = new Map();
+  for (const felder of idx) {
+    for (const t of felder.titel.set) df.set(t, (df.get(t) || 0) + 1);
+  }
+  DF_CACHE.set(idx, df);
+  return df;
+}
+
+/** Dämpfungsfaktor eines Query-Stamms: 1 / ln(2 + df); df 1 → 0.91, df 12 → 0.38; df 0 → 1 (nie über 1). */
+function dfFaktor(stamm, df) {
+  return Math.min(1, 1 / Math.log(2 + (df.get(stamm) || 0)));
+}
+
 function sucheKeyword(module, gruppen, idx) {
   const ergebnisse = new Map();
+  const df = titelDf(idx);
+  const faktor = gruppen.map((g) => dfFaktor(g.stem, df));
   for (let i = 0; i < module.length; i++) {
     const felder = idx[i];
     let summe = 0;
@@ -411,7 +453,7 @@ function sucheKeyword(module, gruppen, idx) {
         const q = feldQualitaet(felder[feldName], gruppen[gi], FUZZY_FELDER[feldName]);
         if (q > 0) termScore += GEWICHT[feldName] * q;
       }
-      if (termScore > 0) { summe += termScore; getroffen.add(gi); }
+      if (termScore > 0) { summe += termScore * faktor[gi]; getroffen.add(gi); }
     }
     if (!getroffen.size) continue;
     ergebnisse.set(module[i].slug, { mod: module[i], roh: summe, getroffen, keyword: true });
@@ -501,14 +543,18 @@ function sucheVolltext(full, gruppen, ergebnisse, module) {
 function bewerten(ergebnisse, gruppenAnzahl, limit, minTeil, minVoll) {
   const liste = [...ergebnisse.values()].map((e) => ({
     mod: e.mod,
+    keyword: e.keyword,
     voll: e.getroffen.size >= gruppenAnzahl,
     score: e.roh * (0.4 + 0.6 * (e.getroffen.size / gruppenAnzahl))
   }));
   if (!liste.length) return [];
   liste.sort((a, b) => b.score - a.score);
   const relativ = liste[0].score * REL_SCORE;
+  // Reine Volltext-Treffer (ohne Keyword-Basis) sind Auffangnetz, kein Ranking — höchstens MAX_NUR_VOLLTEXT
+  let nurVolltext = 0;
   return liste
     .filter((e) => e.score >= Math.max(e.voll ? minVoll : minTeil, relativ))
+    .filter((e) => e.keyword || ++nurVolltext <= MAX_NUR_VOLLTEXT)
     .slice(0, limit);
 }
 
@@ -548,6 +594,7 @@ async function holeIndex() {
   const module = parseIndex(roh);
   INDEX_CACHE.module = module;
   INDEX_CACHE.felder = module.map(feldIndex);
+  titelDf(INDEX_CACHE.felder); // Dokumentfrequenz gleich mitbauen, nicht erst in der ersten Suche
   INDEX_CACHE.quelle = schluessel;
   INDEX_CACHE.stand = jetzt;
   return INDEX_CACHE;
@@ -686,6 +733,10 @@ const TOOL_HANDLERS = {
 
 /* ---------------- JSON-RPC / MCP ---------------- */
 
+// Protokoll-Verhandlung: kennt der Server die angefragte Version, antwortet er mit ihr — sonst mit der neuesten.
+const PROTOKOLL_VERSIONEN = ["2025-06-18", "2025-03-26", "2024-11-05"];
+const PROTOKOLL_STANDARD = PROTOKOLL_VERSIONEN[0];
+
 function rpcResult(id, result) {
   return { jsonrpc: "2.0", id, result };
 }
@@ -701,13 +752,15 @@ async function handleMessage(msg) {
   const isNotification = id === undefined || id === null;
 
   switch (method) {
-    case "initialize":
+    case "initialize": {
+      const gewuenscht = params && params.protocolVersion;
       return rpcResult(id, {
-        protocolVersion: (params && params.protocolVersion) || "2025-06-18",
+        protocolVersion: PROTOKOLL_VERSIONEN.includes(gewuenscht) ? gewuenscht : PROTOKOLL_STANDARD,
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions: INSTRUCTIONS
       });
+    }
     case "ping":
       return rpcResult(id, {});
     case "tools/list":
@@ -810,20 +863,23 @@ export default {
       return new Response("Method not allowed", { status: 405, headers: { Allow: "POST", ...CORS } });
     }
 
+    // Jede POST-Antwort trägt die Protokoll-Version, die der Server spricht (Streamable HTTP)
+    const MCP_HEADER = { "MCP-Protocol-Version": PROTOKOLL_STANDARD, ...CORS };
+
     let body;
     try {
       body = await request.json();
     } catch {
-      return Response.json(rpcError(null, -32700, "Ungültiges JSON"), { status: 400, headers: CORS });
+      return Response.json(rpcError(null, -32700, "Ungültiges JSON"), { status: 400, headers: MCP_HEADER });
     }
 
     const messages = Array.isArray(body) ? body : [body];
     const antworten = (await Promise.all(messages.map(handleMessage))).filter((a) => a !== null);
 
-    if (!antworten.length) return new Response(null, { status: 202, headers: CORS }); // nur Notifications
+    if (!antworten.length) return new Response(null, { status: 202, headers: MCP_HEADER }); // nur Notifications
 
     const payload = Array.isArray(body) ? antworten : antworten[0];
-    return Response.json(payload, { headers: { "Content-Type": "application/json", ...CORS } });
+    return Response.json(payload, { headers: { "Content-Type": "application/json", ...MCP_HEADER } });
   }
 };
 
