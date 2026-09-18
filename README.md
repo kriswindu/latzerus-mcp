@@ -12,6 +12,9 @@
 [![Transport](https://img.shields.io/badge/transport-streamable%20HTTP-0d1117?style=flat-square)](https://modelcontextprotocol.io/docs/concepts/transports)
 [![Auth](https://img.shields.io/badge/auth-none%20needed-22B566?style=flat-square)](#-privacy--safety)
 [![Modules](https://img.shields.io/badge/modules-113-3B82F6?style=flat-square)](https://www.latzerus.ch/lernen/)
+[![Smithery](https://img.shields.io/badge/Smithery-cllatzi%2Flatzerus--mcp-8b5cf6?style=flat-square)](https://smithery.ai/server/cllatzi/latzerus-mcp)
+<!-- Offizielles Smithery-Badge — einsetzen, sobald smithery.ai/badge wieder ausliefert (liefert Stand 2026-09-18 HTTP 500):
+[![smithery badge](https://smithery.ai/badge/cllatzi/latzerus-mcp)](https://smithery.ai/servers/cllatzi/latzerus-mcp) -->
 
 ```
 https://mcp.latzerus.ch/mcp
@@ -89,6 +92,14 @@ claude mcp add --transport http latzerus https://mcp.latzerus.ch/mcp
   }
 }
 ```
+
+### Smithery
+```bash
+npx -y smithery mcp add cllatzi/latzerus-mcp
+```
+The server is also listed on [Smithery](https://smithery.ai/server/cllatzi/latzerus-mcp), which offers a
+proxied endpoint (`https://latzerus-mcp--cllatzi.run.tools`) and a CLI to browse the tools:
+`npx -y smithery tool list cllatzi/latzerus-mcp`.
 
 ### AnythingLLM, Open WebUI, LM Studio, ChatGPT
 Step-by-step with copy-paste snippets: **[latzerus.ch/mcp](https://www.latzerus.ch/mcp/)**.
