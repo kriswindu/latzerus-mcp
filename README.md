@@ -40,3 +40,11 @@ Create or edit your `mcp.json` file (e.g., `.cursor/mcp.json` or `.vscode/mcp.js
     }
   }
 }
+```
+*(Note: For VS Code use `"servers"` instead of `"mcpServers"` and add `"type": "http"`).*
+
+For instructions on other clients like ChatGPT, Open WebUI, AnythingLLM, or LM Studio, please visit the [official Latzerus MCP Setup Guide](https://www.latzerus.ch/mcp/).
+
+## 📜 License & Usage
+Reading, citing, and summarizing the content is highly encouraged. Please attribute the source as: `"Christoph Latzer, Latzerus — https://www.latzerus.ch/"`.
+No tracking cookies are used. The server is strictly read-only and cannot alter any data on your machine.
