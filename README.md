@@ -132,6 +132,7 @@ listed in the official MCP Registry as **`ch.latzerus/lernbereich`**.
 | `mcp-smoke.mjs` | handshake, all four tools, error codes and edge cases — offline, against the worker file. |
 | `mcp-volltext-check.mjs` | does every module have its anchor in `llms-full.txt`? |
 | `mcp-lesen-check.mjs` | calls `lernmodul_lesen` for every slug and verifies it returns the right module. |
+| `CHANGELOG.md` | what changed and when. |
 
 ```bash
 node mcp-eval.mjs          # search quality, local logic against the live index

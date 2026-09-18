@@ -1,0 +1,252 @@
+{
+  "beschreibung": "Eval-Set fuer lernmodule_suchen (Latzerus MCP). faelle = Pflicht, muessen alle bestehen: einer der erwarteten Slugs steht in den Top 3, erwartet [] = es darf nichts kommen. offen = bekannte Grenzen der Wort-Suche, werden nur berichtet.",
+  "faelle": [
+    {
+      "frage": "Stammkunden pflegen",
+      "erwartet": [
+        "stammkunde-weniger-aufwand-als-neukunde",
+        "aus-einem-kunden-drei"
+      ]
+    },
+    {
+      "frage": "Einwandbehandlung",
+      "erwartet": [
+        "zu-teuer-die-einzige-antwort",
+        "warum-einwaende-eine-chance-sind",
+        "echten-einwand-von-ausrede-unterscheiden"
+      ]
+    },
+    {
+      "frage": "Kaltaquise Skript",
+      "erwartet": [
+        "kaltakquise-skript-in-5-minuten",
+        "warum-klassische-kaltakquise-stirbt",
+        "unterschied-b2b-und-b2c-kaltakquise-schweiz"
+      ]
+    },
+    {
+      "frage": "Kunde will billiger",
+      "erwartet": [
+        "rabatt-ohne-marge-opfern",
+        "zu-teuer-die-einzige-antwort",
+        "preis-anker-ohne-zittern"
+      ]
+    },
+    {
+      "frage": "Daten in die Cloud geben Datenschutz",
+      "erwartet": [
+        "welche-daten-niemals-in-die-cloud-ki",
+        "schweizer-cloud-und-cloud-act"
+      ]
+    },
+    {
+      "frage": "Ollama offline im Zug nutzen",
+      "erwartet": [
+        "ollama-ohne-internet-nutzen-im-zug-und-im-funkloch",
+        "wie-du-pruefst-ob-ollama-offline-laeuft"
+      ]
+    },
+    {
+      "frage": "Chatbot fuer unser Firmenhandbuch",
+      "erwartet": [
+        "wie-du-dein-hr-handbuch-als-lokalen-chatbot-aufsetzt",
+        "was-ein-rag-chatbot-ist-in-einfachen-worten"
+      ]
+    },
+    {
+      "frage": "wer entscheidet wirklich im Betrieb",
+      "erwartet": [
+        "so-findest-du-den-wahren-entscheider-nicht-nur-den-einkaeufer",
+        "entscheider-finden-bevor-du-anrufst",
+        "ich-muss-mit-dem-chef-besprechen"
+      ]
+    },
+    {
+      "frage": "Angst vor Ablehnung am Telefon",
+      "erwartet": [
+        "so-verlierst-du-die-angst-vor-dem-nein",
+        "kunde-spuert-alles-am-telefon"
+      ]
+    },
+    {
+      "frage": "guter Gespraechsoeffner am Telefon",
+      "erwartet": [
+        "der-eroeffnungs-satz-der-wirklich-funktioniert",
+        "warum-wie-gehts-am-telefon",
+        "die-ersten-30-sekunden-entscheiden-alles"
+      ]
+    },
+    {
+      "frage": "meine Staerken herausfinden fuer die Bewerbung",
+      "erwartet": [
+        "staerken-finden-ohne-luege",
+        "ehrliche-bestandsaufnahme",
+        "so-entdeckst-du-deine-blinden-flecken-bevor-der-chef-es-tut"
+      ]
+    },
+    {
+      "frage": "Stellenanzeige entschluesseln",
+      "erwartet": [
+        "stellenanzeigen-lesen-wie-hr-sie-meint"
+      ]
+    },
+    {
+      "frage": "Vertrag mit KI pruefen",
+      "erwartet": [
+        "vertraege-agb-mit-ki-vorscannen",
+        "wie-du-vertraege-lokal-auf-versteckte-poenalen-scannst"
+      ]
+    },
+    {
+      "frage": "Was habe ich vergessen Prompt",
+      "erwartet": [
+        "was-habe-ich-vergessen-prompt"
+      ]
+    },
+    {
+      "frage": "Excel Formel verstehen",
+      "erwartet": [
+        "excel-formel-uebersetzen"
+      ]
+    },
+    {
+      "frage": "nach Empfehlungen fragen",
+      "erwartet": [
+        "nach-empfehlungen-fragen-ohne-peinlich",
+        "follow-up-mail-die-empfehlungen-ausloest"
+      ]
+    },
+    {
+      "frage": "welchen Computer brauche ich fuer lokale KI",
+      "erwartet": [
+        "welchen-rechner-du-fuer-ollama-brauchst",
+        "welches-lokale-ki-modell-du-zuerst-waehlst"
+      ]
+    },
+    {
+      "frage": "meine Mails klingen wie ChatGPT",
+      "erwartet": [
+        "ki-mails-menschlich",
+        "warum-ki-texte-gleich-klingen",
+        "ki-filter-echtheit-gewinnt"
+      ]
+    },
+    {
+      "frage": "am Sekretariat vorbeikommen",
+      "erwartet": [
+        "was-ist-gatekeeper"
+      ]
+    },
+    {
+      "frage": "Kunde sagt ich melde mich",
+      "erwartet": [
+        "ich-melde-mich-dann-dranbleiben"
+      ]
+    },
+    {
+      "frage": "Abschlussfrage stellen ohne Druck",
+      "erwartet": [
+        "abschlussfrage-ohne-druck",
+        "abschluss-einfordern-einfach-fragen",
+        "letzte-60-sekunden-deal-abschluss"
+      ]
+    },
+    {
+      "frage": "Zahlen aus PDF auslesen",
+      "erwartet": [
+        "zahlen-aus-pdfs-ohne-halluzination"
+      ]
+    },
+    {
+      "frage": "Schweizerdeutsch zusammenfassen",
+      "erwartet": [
+        "chatgpt-schweizerdeutsch-zusammenfassen"
+      ]
+    },
+    {
+      "frage": "Trigger Events statt Telefonliste",
+      "erwartet": [
+        "warum-trigger-events-wichtiger-sind-als-telefonlisten"
+      ]
+    },
+    {
+      "frage": "Rabatt geben ohne Marge zu verlieren",
+      "erwartet": [
+        "rabatt-ohne-marge-opfern"
+      ]
+    },
+    {
+      "frage": "Firma vor dem Anruf recherchieren",
+      "erwartet": [
+        "so-recherchierst-du-ein-unternehmen-in-5-minuten",
+        "der-hintergrund-check-den-95-prozent-der-verkaeufer-ueberspringen",
+        "entscheider-finden-bevor-du-anrufst"
+      ]
+    },
+    {
+      "frage": "Kochrezept fuer Risotto",
+      "erwartet": []
+    },
+    {
+      "frage": "Steuererklaerung ausfuellen",
+      "erwartet": []
+    },
+    {
+      "frage": "Stammkunden",
+      "erwartet": [
+        "stammkunde-weniger-aufwand-als-neukunde",
+        "aus-einem-kunden-drei"
+      ]
+    },
+    {
+      "frage": "Kaltaquise",
+      "erwartet": [
+        "kaltakquise-skript-in-5-minuten",
+        "warum-klassische-kaltakquise-stirbt",
+        "unterschied-b2b-und-b2c-kaltakquise-schweiz"
+      ]
+    },
+    {
+      "frage": "Preisgespraech fuehren",
+      "erwartet": [
+        "preis-anker-ohne-zittern",
+        "rabatt-ohne-marge-opfern",
+        "zu-teuer-die-einzige-antwort"
+      ]
+    },
+    {
+      "frage": "Gespraech mit dem Chef ueber die Freigabe",
+      "erwartet": [
+        "ich-muss-mit-dem-chef-besprechen",
+        "so-findest-du-den-wahren-entscheider-nicht-nur-den-einkaeufer"
+      ]
+    },
+    {
+      "frage": "Meeting Notizen zusammenfassen",
+      "erwartet": [
+        "action-items-aus-meeting-notizen",
+        "board-protokolle-lokal-zusammenfassen-mit-ki"
+      ]
+    },
+    {
+      "frage": "Bitcoin Kurs Prognose",
+      "erwartet": []
+    }
+  ],
+  "offen": [
+    {
+      "frage": "Kundendaten in ChatGPT eingeben",
+      "erwartet": [
+        "welche-daten-niemals-in-die-cloud-ki",
+        "schweizer-cloud-und-cloud-act",
+        "so-fasst-deine-lokale-ki-hochsensible-dokumente-zusammen"
+      ],
+      "hinweis": "Intent statt Stichwort — Wort-Suche gewichtet «ChatGPT» hoeher als den Datenschutz-Sinn. Faelle wie dieser sind das Argument fuer Stufe 2 (Embeddings)."
+    },
+    {
+      "frage": "Hundefutter guenstig kaufen",
+      "erwartet": [],
+      "hinweis": "«guenstig» + «kaufen» ziehen die Preis-Module. Harmlos, aber zeigt: generische Synonyme feuern auch ausserhalb der Domaene."
+    }
+  ]
+}

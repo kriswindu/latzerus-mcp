@@ -1,40 +1,37 @@
 /**
  * Latzerus MCP Server — Cloudflare Worker
- * ----------------------------------------
- * Stellt die Lernmodule von latzerus.ch als MCP-Server bereit (Streamable HTTP, stateless, ohne Auth).
- * Endpoint: https://mcp.latzerus.ch/mcp
- * Datenquellen (live, 1h gecacht): /llms.txt (Index) und /llms-full.txt (Volltexte).
- * Kein Build-Schritt, keine Abhängigkeiten — Code direkt ins Cloudflare-Dashboard einfügen.
+ * =======================================
+ * Serves the free learning modules of latzerus.ch to AI assistants over the
+ * Model Context Protocol (Streamable HTTP, stateless, no authentication).
  *
- * Änderungen 2026-09-11 (Bugfix, Version bleibt 1.0.0 = synchron mit MCP Registry):
- * - lernmodul_lesen lieferte bei 15 von 107 Slugs das FALSCHE Modul (Treffer über «Verwandte Module»-Links
- *   bzw. fehlende ----Trenner in llms-full.txt). Neu: Zerlegung nach eigener URL:-Zeile / Titel-Überschrift.
- * - llms.txt-Einträge mit «:» statt «—» als Trenner wurden ignoriert (neuestes Modul fehlte in Suche/Übersicht).
- * - INSTRUCTIONS: «Über 99» → «Über 100».
+ *   Endpoint     https://mcp.latzerus.ch/mcp
+ *   Discovery    https://mcp.latzerus.ch/.well-known/mcp/server.json
+ *   Registry     ch.latzerus/lernbereich
+ *   Setup guide  https://www.latzerus.ch/mcp/
  *
- * Änderungen 2026-09-11 abends (Datei worker-v1.0.2.js, Version 1.0.1 = neuer Registry-Eintrag):
- * - Latzerus ist jetzt ein Wissensprojekt ohne Coaching/Beratung: INSTRUCTIONS, ueber_latzerus,
- *   Info-Seite und server.json ohne Coaching, Termin und Strategie-Call.
+ * Tools: lernmodule_suchen · lernmodul_lesen · lernmodule_uebersicht · ueber_latzerus
  *
- * Änderung Datei worker-v1.0.3.js (Version bleibt 1.0.1):
- * - parseIndex zählte die 4 Themen-Links aus «## Themen» in llms.txt als Module (112 statt 108,
- *   leerer Cluster in der Übersicht). Neu: nur Einträge unter einer ###-Cluster-Überschrift.
+ * Data sources, read live and cached 1 h at the edge:
+ *   /llms.txt       index — title, URL, summary and cluster per module
+ *   /llms-full.txt  the full texts
+ * No database, no build step, no dependencies: paste this file into the
+ * Cloudflare dashboard and hit Deploy.
  *
- * Änderungen Datei worker-v1.0.4.js, 2026-09-18 (SERVER_INFO bleibt 1.0.1 — server.json unverändert,
- * also KEIN neuer Registry-Eintrag nötig):
- * - SUCHE NEU (war reiner Wort-Match, «Stammkunden» oder «Einwandbehandlung» fanden nichts):
- *   Normalisierung (Umlaute → ae/oe/ue), Stemming, Präfix-Match, Tippfehler-Toleranz (Levenshtein 1),
- *   45 Synonym-Klassen als Query-Expansion, Feld-Gewichtung (Titel 6 / Tags 4 / Beschreibung 2 /
- *   Slug 2 / Cluster 1.5 / Volltext 0.5), Deckungsfaktor und Score-Schwelle.
- * - Volltext-Stufe: findet die Keyword-Stufe weniger als 3 Module, wird llms-full.txt dazugenommen
- *   (bewusst nur dann — Cloudflare Free hat 10 ms CPU pro Request).
- * - Index wird pro Isolate gecacht (INDEX_CACHE, 10 min) — warme Anfragen brauchen ~1 ms CPU.
- * - «Nichts gefunden» liefert jetzt isError: true (Client kann Treffer und Nicht-Treffer unterscheiden).
- * - lernmodule_suchen hat outputSchema + structuredContent (Clients müssen keinen Fliesstext parsen).
- * - lernmodule_uebersicht hat optionalen Parameter «cluster».
- * Pruefen vor dem Deploy (im gleichen Ordner, node 22+):
- *   node mcp-eval.mjs    → 34 Suchfaelle gegen die echte llms.txt
- *   node mcp-smoke.mjs   → Handshake, alle 4 Tools, Fehlercodes, Grenzfaelle gegen diese Datei
+ * Search: query and index are normalised the same way (umlauts, stemming), matched by
+ * exact token, prefix and one-edit typo tolerance, expanded through 45 synonym classes,
+ * then scored per field (title 6 / tags 4 / slug 2 / summary 2 / cluster 1.5 / full text 0.5)
+ * with a coverage factor and a relevance threshold. Full texts join in only when the
+ * keyword pass finds fewer than three modules — Cloudflare's free plan allows 10 ms CPU
+ * per request, and the parsed index is cached per isolate for 10 minutes.
+ *
+ * Before deploying (Node 22+, from this folder):
+ *   node mcp-eval.mjs           34 search cases against the live index
+ *   node mcp-smoke.mjs          handshake, all four tools, error codes, edge cases
+ *   node mcp-eval.mjs --live    the same 34 cases against the deployed server
+ *
+ * Version history: CHANGELOG.md · MIT licensed, see LICENSE.
+ * Code comments are in German, like the content this server serves.
+ * Content © Christoph Latzer — https://www.latzerus.ch/
  */
 
 const SITE = "https://www.latzerus.ch";
