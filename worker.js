@@ -136,7 +136,7 @@ const TOOLS = [
 
 async function fetchText(path) {
   const res = await fetch(SITE + path, {
-    cf: { cacheTtl: 3600, cacheEverything: true },
+    cf: { cacheTtlByStatus: { "200-299": 3600, "400-599": 0 }, cacheEverything: true }, // Fehler nie cachen (2026-09-25: 403 hing 1 h im Edge-Cache)
     headers: { "User-Agent": "latzerus-mcp-worker/1.0" }
   });
   if (!res.ok) throw new Error(`Konnte ${path} nicht laden (HTTP ${res.status})`);
