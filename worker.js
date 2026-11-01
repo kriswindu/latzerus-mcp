@@ -830,8 +830,26 @@ const SERVER_JSON = {
   ]
 };
 
+/* Security-Header für jede Antwort (2026-11-01) — CORS bleibt unverändert */
+const SECURITY_HEADERS = {
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
+  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+};
+
 export default {
   async fetch(request) {
+    const res = await antwort(request);
+    const headers = new Headers(res.headers);
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+  }
+};
+
+async function antwort(request) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
@@ -880,8 +898,7 @@ export default {
 
     const payload = Array.isArray(body) ? antworten : antworten[0];
     return Response.json(payload, { headers: { "Content-Type": "application/json", ...MCP_HEADER } });
-  }
-};
+}
 
 /* Nur für das lokale Eval-Skript (mcp-eval.mjs) — im Worker ohne Wirkung. */
 export { parseIndex, feldIndex, queryGruppen, sucheDurchfuehren, norm, stem };
