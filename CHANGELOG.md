@@ -3,6 +3,13 @@
 The server reports its version in `initialize` and in `server.json`; that version is what the
 MCP Registry lists. Dates are the deploy dates.
 
+## Security headers — 2026-11-01 (server version stays 1.0.1)
+
+Every response now carries Strict-Transport-Security, Content-Security-Policy (`default-src 'none'`, inline
+styles for the info page only), X-Frame-Options `DENY`, X-Content-Type-Options, Referrer-Policy and
+Permissions-Policy. CORS headers and all MCP behaviour are unchanged; `mcp-smoke.mjs` and `mcp-eval.mjs` pass
+as before.
+
 ## Search tuning — 2026-09-18 (server version stays 1.0.1)
 
 Whole-sentence questions hit 14 of 20 after the overhaul; the main cause was that a word found in
