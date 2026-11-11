@@ -3,6 +3,12 @@
 The server reports its version in `initialize` and in `server.json`; that version is what the
 MCP Registry lists. Dates are the deploy dates.
 
+## Favicon — 2026-11-11 (server version stays 1.1.0)
+
+`/favicon.ico` and `/favicon.png` now return the 96 px icon (PNG), and the info page links it. Claude and the
+connector directory show the favicon of the server URL; before this, mcp.latzerus.ch answered 404 and Claude
+showed a placeholder letter.
+
 ## 1.1.0 — 2026-11-11
 
 The server version moves from 1.0.1 to 1.1.0 (`initialize`, `server.json`, MCP Registry).

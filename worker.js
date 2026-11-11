@@ -818,6 +818,7 @@ const CORS = {
 const INFO_HTML = `<!doctype html><html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Latzerus MCP-Server</title>
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
 <style>body{background:#0d1117;color:#e6edf3;font-family:system-ui,sans-serif;max-width:640px;margin:8vh auto;padding:0 20px;line-height:1.6}
 h1{color:#e0a93a}code{background:#161b22;padding:2px 6px;border-radius:4px}a{color:#e0a93a}</style></head><body>
 <h1>Latzerus MCP-Server</h1>
@@ -897,9 +898,10 @@ async function antwort(request) {
       });
     }
 
-    // Server-Icons
-    if (url.pathname.startsWith("/icons/")) {
-      const b64 = ICON_DATEIEN[url.pathname.slice(7)];
+    // Server-Icons; /favicon.ico und /favicon.png zeigen auf das 96-px-Icon (Claude zeigt das Favicon der Server-URL)
+    if (url.pathname.startsWith("/icons/") || url.pathname === "/favicon.ico" || url.pathname === "/favicon.png") {
+      const datei = url.pathname.startsWith("/icons/") ? url.pathname.slice(7) : "latzerus-96-light.png";
+      const b64 = ICON_DATEIEN[datei];
       if (!b64) return new Response("Not found", { status: 404, headers: CORS });
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
       return new Response(bytes, {
