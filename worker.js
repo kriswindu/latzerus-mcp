@@ -37,10 +37,23 @@
  */
 
 const SITE = "https://www.latzerus.ch";
-const SERVER_INFO = { name: "latzerus-mcp", title: "Latzerus Lernbereich", version: "1.0.1" };
+const ICON_BASE = "https://mcp.latzerus.ch/icons/";
+const ICONS = [
+  { src: ICON_BASE + "latzerus-96-light.png", mimeType: "image/png", sizes: ["96x96"], theme: "light" },
+  { src: ICON_BASE + "latzerus-256-light.png", mimeType: "image/png", sizes: ["256x256"], theme: "light" },
+  { src: ICON_BASE + "latzerus-96-dark.png", mimeType: "image/png", sizes: ["96x96"], theme: "dark" },
+  { src: ICON_BASE + "latzerus-256-dark.png", mimeType: "image/png", sizes: ["256x256"], theme: "dark" }
+];
+const SERVER_INFO = {
+  name: "latzerus-mcp",
+  title: "Latzerus Lernbereich",
+  version: "1.1.0",
+  websiteUrl: "https://www.latzerus.ch/mcp/",
+  icons: ICONS
+};
 const INSTRUCTIONS =
   "MCP-Server von Latzerus (Christoph Latzer, latzerus.ch) — Wissensprojekt aus der Ostschweiz, Hilfe zur Selbsthilfe. " +
-  "Über 100 kostenlose 5-Minuten-Lernmodule zu Vertrieb & Kommunikation, KI im Arbeitsalltag, Karriere-Werkstatt und Wilde Themen. " +
+  "Über 150 kostenlose 5-Minuten-Lernmodule zu Vertrieb & Kommunikation, KI im Arbeitsalltag, Karriere-Werkstatt und Wilde Themen. " +
   "Nutze lernmodule_suchen für die Stichwortsuche (versteht Umschreibungen, Synonyme, Plural und Tippfehler — " +
   "es braucht nicht das exakte Titel-Vokabular), lernmodul_lesen für den Volltext eines Moduls, " +
   "lernmodule_uebersicht für alle Module nach Thema, ueber_latzerus für Infos zum Projekt. " +
@@ -67,24 +80,31 @@ const TREFFER_SCHEMA = {
         },
         required: ["slug", "titel", "cluster", "url", "score"]
       }
-    }
+    },
+    hinweis: { type: "string", description: "Nur bei 0 Treffern: was der Lernbereich abdeckt und wie es weitergeht" }
   },
   required: ["suchbegriff", "anzahl", "treffer"]
 };
+
+/* Alle vier Tools lesen nur öffentliche Inhalte von latzerus.ch: nichts wird verändert,
+ * ein wiederholter Aufruf hat keine Nebenwirkung, und es gibt keine Verbindung nach aussen. */
+const NUR_LESEN = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 
 const TOOLS = [
   {
     name: "lernmodule_suchen",
     title: "Lernmodule durchsuchen",
+    annotations: { title: "Lernmodule durchsuchen", ...NUR_LESEN },
     description:
       "Durchsucht alle kostenlosen Lernmodule von latzerus.ch (Vertrieb, Kommunikation, KI im Arbeitsalltag, Karriere) " +
       "nach Stichworten. Versteht Umschreibungen, Synonyme, Ein- und Mehrzahl sowie Tippfehler — es braucht nicht das " +
       "exakte Titel-Vokabular; «Kunde will billiger» oder «Einwandbehandlung» funktionieren. " +
-      "Liefert Titel, Cluster, URL und Kurzbeschreibung der besten Treffer.",
+      "Liefert Titel, Cluster, URL und Kurzbeschreibung der besten Treffer. Die Module sind auf Deutsch: " +
+      "Suchbegriffe auf Deutsch angeben, auch wenn die Frage in einer anderen Sprache gestellt wurde.",
     inputSchema: {
       type: "object",
       properties: {
-        suchbegriff: { type: "string", description: "Stichworte oder eine Frage, z.B. 'Kunde will billiger' oder 'ChatGPT Follow-up'" },
+        suchbegriff: { type: "string", description: "Stichworte oder eine Frage auf Deutsch, z.B. 'Kunde will billiger' oder 'ChatGPT Follow-up'" },
         maxTreffer: { type: "number", description: "Maximale Trefferzahl (Standard 8, max. 20)" }
       },
       required: ["suchbegriff"]
@@ -94,6 +114,7 @@ const TOOLS = [
   {
     name: "lernmodul_lesen",
     title: "Lernmodul im Volltext lesen",
+    annotations: { title: "Lernmodul im Volltext lesen", ...NUR_LESEN },
     description:
       "Liefert den kompletten Inhalt eines Lernmoduls (Kernpunkte, Hauptteil, Praxis-Schritte, typische Fehler, FAQ). " +
       "Als Parameter den Slug oder die URL des Moduls angeben, z.B. 'preis-anker-ohne-zittern'.",
@@ -108,6 +129,7 @@ const TOOLS = [
   {
     name: "lernmodule_uebersicht",
     title: "Alle Lernmodule nach Cluster",
+    annotations: { title: "Alle Lernmodule nach Cluster", ...NUR_LESEN },
     description:
       "Listet alle verfügbaren Lernmodule von latzerus.ch, gruppiert nach Themen-Cluster, mit Titel und URL. " +
       "Optional auf einen Cluster einschränken, um Tokens zu sparen.",
@@ -126,6 +148,7 @@ const TOOLS = [
   {
     name: "ueber_latzerus",
     title: "Über Latzerus",
+    annotations: { title: "Über Latzerus", ...NUR_LESEN },
     description:
       "Infos über Latzerus: das Wissensprojekt von Christoph Latzer, die vier Themen, Herkunft, eingesetzte KI-Tools und Kontakt.",
     inputSchema: { type: "object", properties: {} }
@@ -632,13 +655,11 @@ async function toolSuchen({ suchbegriff, maxTreffer }) {
   };
 
   if (!treffer.length) {
-    return {
-      text:
-        `Keine Module zu «${begriff}» gefunden. Latzerus deckt Vertrieb & Kommunikation, KI im Arbeitsalltag, ` +
-        `Karriere-Werkstatt und Wilde Themen ab — lernmodule_uebersicht zeigt alle Themen.`,
-      isError: true,
-      structured
-    };
+    // 0 Treffer ist ein gültiges Ergebnis, kein Fehler (seit 1.1.0)
+    structured.hinweis =
+      `Keine Module zu «${begriff}» gefunden. Latzerus deckt Vertrieb & Kommunikation, KI im Arbeitsalltag, ` +
+      `Karriere-Werkstatt und Wilde Themen ab — lernmodule_uebersicht zeigt alle Themen.`;
+    return { text: structured.hinweis, structured };
   }
 
   const text = structured.treffer
@@ -806,7 +827,8 @@ für KI-Assistenten wie Claude oder ChatGPT direkt durchsuchbar.</p>
 <p><code>https://mcp.latzerus.ch/mcp</code></p>
 <p>Verfügbare Werkzeuge: Modul-Suche, Volltext-Lesen, Themen-Übersicht, Infos zum Projekt.</p>
 <p>Ein Wissensprojekt von Christoph Latzer — Sales &amp; KI-Strategien, die in 5 Minuten verstanden werden.
-<a href="https://www.latzerus.ch/contact/">Kontakt</a></p>
+<a href="https://www.latzerus.ch/contact/">Kontakt</a> ·
+<a href="https://www.latzerus.ch/datenschutz/#mcp-server">Datenschutz</a></p>
 </body></html>`;
 
 /* ---------------- MCP-Discovery (server.json, SEP-1649) ----------------
@@ -819,15 +841,24 @@ const SERVER_JSON = {
   "name": "ch.latzerus/lernbereich",
   "title": "Latzerus Lernbereich",
   "description":
-    "Latzerus (CH): 100+ kostenlose 5-Minuten-Lernmodule zu Vertrieb, KI und Karriere.",
+    "Latzerus (CH): 150+ kostenlose 5-Minuten-Lernmodule zu Vertrieb, KI und Karriere.",
   "version": SERVER_INFO.version,
   "websiteUrl": "https://www.latzerus.ch",
+  "icons": ICONS,
   "remotes": [
     {
       "type": "streamable-http",
       "url": "https://mcp.latzerus.ch/mcp"
     }
   ]
+};
+
+/* Icons (PNG, Base64) — gleiche Domain wie der Server, wie es die MCP-Spezifikation empfiehlt */
+const ICON_DATEIEN = {
+  "latzerus-96-light.png": "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAwFBMVEX+/v4Bel4DfGABgWTxqTgji3PX6uYdiXF2uKmUx7vvqDkVhmu52tOJwrXr9PJVppOp0sn+tDxirZw7mYPG4dv2zYxLoo5ssqLxsU0qkXlDnYgzlH2cy8DO5uDj8O386tDwrUSDvrCx1s6hzsTg7uv99utPpJBmsJ6Ava/B3tf2t1b86c3urkv30JQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2RzWxAAADk0lEQVR42u1XaXOjMAwFqzZ2zVVgoUCSbdN7j///91a2DCQTdgpZ+mXHb9qSIaAn6elwg8DDw8PDw8PD479GnnFg0Wv+VfYzxkIEY9nX2H8EZhjwD8gvIejABoAUUJp87Ve9/fLtHL8vHylgSBFgjp7DkMsVHD/vznH7cvGIiMBYD0OIRBDEJlUsE0sJvt/cnuLmfuaZQxMZgujt2cXDQlgsBxLcTLi9eZh/TMQx+ZzqkBSBUmxJMEIaxTECzZiuNiYQKK2wgjNIuJGi2pRA1ocg6Ml+UeEVYxDbEShdpkZh1w62Nxj0SwjOMU+gIijw8g7Gb+iCmHoPU7WgD87s3z28zJjnoM2gS6hCm7G5MUnppxH8uJ/w6/7+x5x51qRUQGg+QqoDuFplsPvXQWTMF8JNDOwvSxWzcTqtG7Cq5hGv1am0oKU1f+gAzRNVoKbx160wX3EgEVvXtAmHzC2ZI0DYyqEqW2CwPoJUWw1NA3Frs2mO1nf8KRhv4unR/ceutVli8LRiLw5xI4cxRu7G/QFDSU46KhXVLjMqG1fKFRmKYZSODTMglUMOhCq6niMijWJY6+h/na6RuAbzminFwt3ZoSrW97hjqA/+EugDK1ecAioqdAvtRv2uRydtnUvSJuSZTJRBkiQqFyucPzKbTPEk32R+sB+xhDBZatz6eKaoru4mswbbkyoRuxrLMgS6V1Fx2bGzz9WjlE3TSERiwlnSyoI87GX+UVV5UvTMFBToZNDG6Plq2zocdRixgKAdjj3UZ3YkszZxFSKYKUk42kK+BP/cvnQN4NrMWNPFlLAn+lqcHJAm4FHg8wQxNr1n48jy9JIfCTi7iiCb/LJKqOeZ71mIJRRdRSCmt7DFynjeATs9rovg3QbgZFYzDzQjQXkVAb1F8s62vqLa2Z8lcwWBpqLE0mf1fA65qfba7bTVBPYoiGNR1Awe/9boSsXBtQROORwE6T5dlM21BOQWg0gexVSgJT9FFNnLhfllZQrUvXbg697tXe12wxnCqwiCqqUFRf+IAW1ZPjN1riXAlVtCaAOgcVQFsz01i0UEds7H+WNnxqY7iWxKsGsl7aod9TPflkDgPgGmO6NuZzIUmgPtdgRKUxUBFzSZ8eOGBKKmExRQFzeWQG+XIjWUTi3GybyhBqKz7uPhIT+ZBbhyNiJIBveb8VZvb5QbEYS26s/OQ1aDlRHwwMPDw8PDw8PD4wJ/AOJWLbhlYoAHAAAAAElFTkSuQmCC",
+  "latzerus-256-light.png": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAwFBMVEX+/v4Bel4DfGDwqDgCgGNZqJbvpznr9fIVhWvY6ua52tP9sTt3uKmUx7up0sg6mIOKwrUkjHTI4txDnYjwrUVrsqH30JPj8O0rkXlirZwylH3zvWn++O4diXBKoY3xsEqdzMGhzsSx1s6DvrDg7uvO5eDB3tdmsJ6Ava9Oo5D2zpPytVn1w3b5264AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADcHp59AAALLUlEQVR42u1d65qjNhI1GilILHdCAGft+No9nd28/+tFAmMEkjB2DxjjOj/mmx7zeaijUqmu6tUKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACjIQ5JElFKozVx/eztpE9zC2FkCSCELLrd2e8k/tbiwiMJFsaR9zbyHyuZZYh/wMnpPeRPcUf6mgMcsXeQP9TLLyjA6zeQPzPKLxjw3kIBLCMB6A1UgPQRYKHlW4HEvAME4utRyd6bgMxC0TaM328L1D5xXJ6LVpQ6T3jH///1+1D87+4v9/oIwEH92L5yljgH+XHyzfDnf34Mxe//vffLbdp3DPr1Y27JU8UBLSbeCn/++G0gfvx1NwErH5kdIXJ9Krg+JAIFRM7TasBvw9b/IQJWoYiDtK5wYjfukoWkTzgFBVsMASufYqutBlVImDaP7NsUCQpouBgCVplL2+GwMHaJ03dWCAqCeCkEcAq8hPIcABZRsPgzd1vCneQd0GgJDhdDgDgOHM8l221C0qPPBgUMXAkSthwC+hDpDwrOwMZ5BwI0zlJzKnpvQEDU4ysh7C6eANUCcCu5Rhp3aZkEZNRSCXCag3F8Bp5DQNwTL3KRpTB6dAaeQYCfxE2soKw/zVayWozNwPQE+AE+NNGi6gH5K6ftGo9rCacmwA+kOHirWkAhbXtfoHHzx9MScOCRL9rXPx018ierFev6xgh9LIMAJxE+/u76o5Is4NUSu6wmdffFxl4AAaX41nX/r5iSLuIeQKZRgHEN4VQElOLzpbwqs51r5BcV00ITHAnT+NIExERkgXkelGnyYNdlzsWnZ30GidovTAAXH5eZECkN9IWRPkmmT6WPdxaOT4AQv8pz7c1ZIFRv87MxOGavSUBMUJUUxFvWI7+FLgmgwlBKGE0FxiWAFRhXHSHUM2cBxcdO7RtaBgLGsgKcgNHqApX4JQFEVuCOA8i14yu7+gaWsZCwG4mAwbizMsQ+K+UXKV45t2UnXU9X0g7XWExDeDsKAf/88fcfg8Afu0v8tFR+sbztljC2lmXsaoe5nszb68ZzB385mEvr1d+ErfeON6hdBor8oQkyy3kd8S+mj/eCtcVf+VLXUHk0tm27xg2eR1MRc3Ze6O0cNrAUVJV6Ue4pXYNWqw6adr4w7mmomCJDqi9q7ElUF3VQRHb9HY52LT5GW9/cMFH2i6bsvoaC4ilrn1J8re2Jt8A0ZbfE59JHrvIUCy76XzkGLruzpWT8DLEGR9wu7latvgZdtENanvu8xO/bmjpxLb7YHGGmbaiwUKsy0iYgnVz8LMGWJm3JD/ZMJ35UqUji6VTELbd/ufiazdE0liJTT8Vk5VJJpNzY6ZsrDHiRMBJ0q5W+Uv+yNM6Lw6YOECYMjbA1lGopmPwY3Pa4ZUln7YSlyD9NwxA7emkM6O0EY57rpqnrMbZFmoLhZmr5/V6LtG/tfbQpOkvPmnW2Sbk3UD6wD84J0CxOwWBgp69TpDtF7x16TX45G25JaRKeByfOkdYTnnrU5tTjlbU6fTPtnAStP/1ENHGdgX587OZ6K/gEP/Dc1+eKpE5fzWZOrl6LHYbxIOHt8yEkUZU7m4cXxPrafLkGxH09DwgdzKLGjs896/B4dAXSz4Ik64gKZ9N0Bj7FCbI3va3OxuA0Lp2HSN8qdCTBpnQscQuVl2mSvp1OnQ7FI36p7ZbLqHFaGG8WE4t8bRXswmRu2+nUKfcAMmcnkGHawY+qJJiiALzpoWkXtIai8rzTZ41aej0jT6G5/KMp5BwS1G0YldtGjRDd0+kTpyl+6k9CviquPgNeydjdH+xLs+71PxmFL33i7f65ebAdVaMh8WqevgBQh3vtcagDxZrRSasy+jTK10EQJAn/Y82R5xFHvl4H22eNGX/Iy8cudY0yvVmtGbYIM9Q/6gx+6/M9Usr9IiqgyWfonNn8Ep0+bitwnG5q76QMZXUTDYctajQF0ZbPu1Pk5xSu3XiuKV4PqZkHJyTrcvg9J0c1nLG9ADVTATxoaxHkaNSffKxmi7DanZ+aAz6z9bPxG9l/a1XARUDR7YJA0zXCf6NvEw3s1Gbh2pKtJOeu6E0pcKbcGYvP9yu6GjLvtvQJajnvItO5608pIKT4D9nZ8b3wp5sWBbmiKD55ZsR1j2Hoebu97/uHg+M4h/24SaGDpMoWCnr8T/vDDRBuzQMpJdCVWuhpWxcRGSTcc7Q6gUEXkvs4bkzEWvYKKaMd9bZ2jttNJX1LfLz2b6T5Wx7yudiUnsBNb7DlHI1JgN1drnKak4SH+FIKyXh9yCW5iGistl8rHs29m63wsofs1dWz4YGB+AIy6Zxr7a5hfgJuqJh9KpcMdafA+FPaS0EO3RMgap2294g+AQGG0Z2LsEgKXZRoFQW7IZRKaU0HPSD+uATEvbFvVc7RzbZwFSGOaXDW2Oy3fkj+UQm4/5XKWN3KQ6PH0Flm/nfWfGLNjIAjvvtduEGghdMbTHdbgU7N3TIzI4DhO62xUP2vG7F6p7wj9bgEs9OALb4rTcW9gCBkd86DcQLqT6g1MwKG78lq46+H3HPQnYdqNMBGcyNgqAUszzw6sMJ3RkoiLauzrTMjwB+2Aco8HfHvOFgN1bTZETBIAcTWz0P2+L5qikmnmREwxAKIuCDx770+o1tO/JinDSA3d4AwfV/O/cF191sO11PAmhEBt3dkt9v3QcVqXOFoVn5AeEsBhqSHBhhBiYB5OUK33qab53xYs5qJSTInV/jWDng4C6PMPjQaUMyJgD0eR37ldG1OgZ6pgCcQ0B+ZIRSsflF/QeMJ8nzQjAhQTQD6RcNau25KNFgZp+afSIDSCINaw/vp9xospFvCpNbCOSVElJgNERdLr/2dOpYTSX3mWKoJzYmA7owGwl/iMmTrUg6OvpdpF3XTS/uvnDmcFQGoG7XzltyP4NIV0G0Jvh8nfoeU63rtRsk5E8D/E6/saSo7unCwGgP7GRHQzV0Lwx9XlbswJdufoxAwKz8gV1eDjjasf0EyJwJUt5RvCjLM+NuPoW84bnoCdE4JN4EDsr6cO4ofwWPSjxYN6m5+rWZbSOj0dnER/KggsyLAVBWtKsM0Ckj609P2+xOMHsO8NEBnBqXKcOXJIN0vBiGPK/OsCIj7BnYtqWvXtZdJgNrLZyoJbfbLJECMNaEhHHSapJdDwCqr7vkZUB1Il0kAj3+2qI5d+xnwFkqAuPYgty5Oivm04gywpRIgCrpeEVBkXaYV9NeiS33EyyOgiuDjA+9d5Q2BGGv7oppxsYUS0OyJXaJRAim1tywCfE8zn+KoXqI0w7kkArKCe3qaex/sRK3wBQskoBr3E6nL7v0HtlrJjRZHgF3U11uIczAnnjzQ4ykXv10LPEshwN/gZuKnjILFtD8z1DilwfllEJARpUu+iv1sw/VeyFoUAdLyG5z+Ai+YAHG7h36gN+wpHy+HAMPyWzh3jPVzzthpIQRkxHBfAeqL+qWe5xcnQL/8vIybxL2jfwvxAzLD7sdKR1jQPSXWSyBgT/XGH30qEUFkocW5wieCBvdDZt36eXO56csSoN394q4Sb8BtOlLb2IsSoN394ugvtPc1OEq7Y/raBGh3v7j43RnW8yxN/70iASeT6+cO7nrHP1+YALbBNz2/m1vglQkItL+9AaU9RfCTcgo8cQt8e3pce/rdmAVIuhPA5IUJUH+vhxXtbpdOZ3IKPDi4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAV8O/OSitudTtHikAAAAASUVORK5CYII=",
+  "latzerus-96-dark.png": "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAwFBMVEUMERcAd1wAgWMAfWACa1TxqTgKJiUEV0YGRjsHOzMUFhjspTcDYk3ZmDQJMi3+tDyOZygFTkALHiBENR+SaSksJhw9MR5INyDIizEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADBm6GYAAACzUlEQVR42u1X2ZLiMAyMLeGDyXiGLHv8/5eubPkKhBo75XnZdT9AKLBaZ8ssy8TExMTExMTEPw2nUQjU7rvsawBBANBnTl8f8PwLI0WENN8UQCKA1edLdZ3+ef+scL9/PodwKxH4HFE1TDPHdfn9scfbM8GGkUEKMuwoECm0aiX4cXnb4f16lCSkClMblXikMO0El4K3yyHBsigCP+V0oRpJcNBSINRggo0MqtSvCE0MPQTGl2AF7iYFbTG0ExiBvtpc4TU9YHcXvSCwPAIm2VeycbSJ4ONS42gOFkuD4Ip9XQ/3lwS/3vf4cz0wD7fcQEwlcrPaLrHznw6857H1aZciUCnYiUc7rEZEbXe5F1F4VimyQlh5ikChlNTdkGfUoEhLxpH1onF4jkDIrAK8xm6uKDbeVC0cFptrUNKR3RLgjW1sy68Au9PnTVmdXFl7MvRAEKUn5oCM+gIRvF0uMnSWWMvHxPoWClxKC6oPyAh+EGtHfhTLAR80yTyVPNgwwNKD2hgb4N97VqcL23bZrLkZdkuZ0Cq2SDTovmW8859crfeHr6LMO4XHCkJcypHzhtxg+GBa7POtZzWO9pYztCB9FXOqQm1CXag5cx0SRAMBpqbgOZOBDpNQblx4mgkns0QU4Nf2yxZMXbq7NcT5ULWGdhGoZ+v2gF/lSHsJdB0AVcIef3+aYBeAXN0LB+A0wa4CRz13ywTrKQI+xS/2tQh6Ai3PELDuUuuLF9d/vyZkGINzBFHe1Pr6iqCMVctpAsxCoNqy2UsQ3ZJo6n8WKx5AiHNtWglF3rskpfCEcwS+iFDPsS2lb0GDFvnbQwwg70uEkQR8TzBRy0JHDiWwKfG2HBlIsGna4SC0KXo8lMCK1KZb1qWBBCpNAa9HJhiYoug+pAtDoINhBNl9dLUWhBvMCILkfvWXeixB+oF72C3DCCYmJiYmJiYm/mP8Bf5RHMSowhP6AAAAAElFTkSuQmCC",
+  "latzerus-256-dark.png": "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"
 };
 
 /* Security-Header für jede Antwort (2026-11-01) — CORS bleibt unverändert */
@@ -863,6 +894,16 @@ async function antwort(request) {
     if (url.pathname === "/.well-known/mcp/server.json") {
       return new Response(JSON.stringify(SERVER_JSON, null, 2), {
         headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=3600", ...CORS }
+      });
+    }
+
+    // Server-Icons
+    if (url.pathname.startsWith("/icons/")) {
+      const b64 = ICON_DATEIEN[url.pathname.slice(7)];
+      if (!b64) return new Response("Not found", { status: 404, headers: CORS });
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      return new Response(bytes, {
+        headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800", ...CORS }
       });
     }
 

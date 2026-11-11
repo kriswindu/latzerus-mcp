@@ -5,13 +5,14 @@
 # Latzerus MCP Server
 
 **Swiss B2B sales and everyday-AI know-how — inside your AI assistant.**
-113 free 5-minute learning modules from [latzerus.ch](https://www.latzerus.ch), one endpoint, no account.
+150+ free 5-minute learning modules from [latzerus.ch](https://www.latzerus.ch), one endpoint, no account.
 
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-ch.latzerus%2Flernbereich-e0a93a?style=flat-square)](https://registry.modelcontextprotocol.io/v0/servers?search=ch.latzerus)
 [![Protocol](https://img.shields.io/badge/MCP-2025--06--18-0d1117?style=flat-square)](https://modelcontextprotocol.io)
 [![Transport](https://img.shields.io/badge/transport-streamable%20HTTP-0d1117?style=flat-square)](https://modelcontextprotocol.io/docs/concepts/transports)
 [![Auth](https://img.shields.io/badge/auth-none%20needed-22B566?style=flat-square)](#-privacy--safety)
-[![Modules](https://img.shields.io/badge/modules-113-3B82F6?style=flat-square)](https://www.latzerus.ch/lernen/)
+[![Version](https://img.shields.io/badge/version-1.1.0-e0a93a?style=flat-square)](CHANGELOG.md)
+[![Modules](https://img.shields.io/badge/modules-150%2B-3B82F6?style=flat-square)](https://www.latzerus.ch/lernen/)
 [![Smithery](https://img.shields.io/badge/Smithery-cllatzi%2Flatzerus--mcp-8b5cf6?style=flat-square)](https://smithery.ai/servers/cllatzi/latzerus-mcp)
 [![Glama](https://glama.ai/mcp/connectors/ch.latzerus/lernbereich/badges/score.svg)](https://glama.ai/mcp/connectors/ch.latzerus/lernbereich)
 <!-- Offizielles Smithery-Badge — einsetzen, sobald smithery.ai/badge wieder ausliefert (liefert Stand 2026-09-18 HTTP 500):
@@ -27,8 +28,8 @@ https://mcp.latzerus.ch/mcp
 
 ## What this is
 
-Latzerus is the knowledge project of **Christoph Latzer** (St. Gallen / Zurich, Switzerland): over a
-hundred short, field-tested lessons on B2B selling, on using AI at work without handing your data away,
+Latzerus is the knowledge project of **Christoph Latzer** (St. Gallen / Zurich, Switzerland): over
+150 short, field-tested lessons on B2B selling, on using AI at work without handing your data away,
 and on career positioning. *Smart not hard — help people help themselves.*
 
 This server puts that library one question away. Ask your assistant *"how do I answer «too expensive»?"*
@@ -48,8 +49,12 @@ the site's public `llms.txt` and `llms-full.txt` — there is no database and no
 | `lernmodule_uebersicht` | All modules grouped by theme. Optional `cluster` parameter to fetch just one theme and save tokens. |
 | `ueber_latzerus` | Background on the project, the four themes, the tools used, and contact details. |
 
-The four themes: **Vertrieb & Kommunikation** (43) · **KI im Arbeitsalltag** (42) ·
-**Karriere-Werkstatt** (21) · **Wilde Themen** (7).
+All four tools carry the annotations `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true` and
+`openWorldHint: false`, so clients can run them without asking for confirmation each time. A search without
+hits is a normal result (`isError: false`, `anzahl: 0`, plus a `hinweis` field), not an error.
+
+The four themes: **Vertrieb & Kommunikation** · **KI im Arbeitsalltag** · **Karriere-Werkstatt** ·
+**Wilde Themen** — 152 modules as of November 2026, one new module almost every day.
 
 ## 🎯 What people use it for
 
@@ -59,6 +64,20 @@ The four themes: **Vertrieb & Kommunikation** (43) · **KI im Arbeitsalltag** (4
   and setting up local models with Ollama, from «which machine do I need» to a RAG chatbot on your own handbook.
 - **Career positioning** — honest self-assessment, reading job ads the way HR means them, and a USP that
   survives contact with reality. No buzzwords.
+
+## 💬 Example prompts
+
+Once connected, just ask. Mentioning «Latzerus» helps the assistant pick this server.
+
+1. *«Ein Kunde sagt, wir sind zu teuer. Was rät Latzerus dazu? Nenn mir die Praxis-Schritte und die Quelle.»*
+   → `lernmodule_suchen` finds the pricing modules, `lernmodul_lesen` reads the best one, the answer links it.
+2. *«Welche Latzerus-Module gibt es zu lokaler KI mit Ollama? Liste sie mit Links auf.»*
+   → `lernmodule_suchen`, or `lernmodule_uebersicht` with `cluster: "KI"` for the whole theme.
+3. *«Lies das Latzerus-Modul zur Erstkontakt-Mail und mach mir aus den Praxis-Schritten eine Checkliste.»*
+   → `lernmodul_lesen` on `die-erstkontakt-mail-auf-die-schweizer-ceos-antworten`.
+
+You can ask in any language. The search itself works on German words; the tool description tells the
+assistant to search in German (*«Rabatt»* finds three modules, *"discount"* none).
 
 ## 🚀 Connect it
 
@@ -133,6 +152,9 @@ field — title counts six times as much as body text — damped by how many tit
 match disappears under a clear one. Full texts are only pulled in when the keyword pass finds too little,
 and add at most three modules of their own. Typical search: **70–115 ms**.
 
+Icons: `https://mcp.latzerus.ch/icons/latzerus-{96,256}-{light,dark}.png`, served by the worker itself
+(same origin as the server, as the MCP spec recommends) and listed in `serverInfo.icons` and `server.json`.
+
 Discovery: [`/.well-known/mcp/server.json`](https://mcp.latzerus.ch/.well-known/mcp/server.json) ·
 listed in the official MCP Registry as **`ch.latzerus/lernbereich`**.
 
@@ -145,6 +167,7 @@ listed in the official MCP Registry as **`ch.latzerus/lernbereich`**.
 | `mcp-smoke.mjs` | handshake, protocol negotiation, all four tools, error codes and edge cases — offline, against the worker file. |
 | `mcp-volltext-check.mjs` | does every module have its anchor in `llms-full.txt`? |
 | `mcp-lesen-check.mjs` | calls `lernmodul_lesen` for every slug and verifies it returns the right module. |
+| `icons/` | the server icons as PNG files (the worker embeds the same files). |
 | `CHANGELOG.md` | what changed and when. |
 
 ```bash
@@ -155,11 +178,29 @@ node mcp-eval.mjs --live   # same 40 cases against https://mcp.latzerus.ch/mcp
 
 Requires Node 22+. No install, no dependencies.
 
-## 🔒 Privacy & safety
+## 🔒 Privacy Policy
+
+Full policy (German): **[latzerus.ch/datenschutz/#mcp-server](https://www.latzerus.ch/datenschutz/#mcp-server)**. In short:
+
+- **Data collection:** each call carries the tool name and its arguments (a search term, a slug). Nothing
+  else. The server never sees your conversation, only what your assistant puts into a tool call.
+- **Usage and storage:** the arguments are used to compute the answer and then discarded. No accounts,
+  no cookies, no user profiles, no IP addresses, no logging of what you ask.
+- **Third parties:** the worker runs on Cloudflare, Inc. (USA, certified under the Swiss-U.S. Data Privacy
+  Framework), which processes technical connection data to operate the network. Nothing is sold or shared.
+- **Retention:** none on my side. Cloudflare's technical logs follow Cloudflare's own retention.
+- **Contact:** [latzerus.ch/contact](https://www.latzerus.ch/contact/) · kontakt@latzerus.ch
+
+## 🛟 Support
+
+Questions, bugs, a module you miss: [contact form](https://www.latzerus.ch/contact/) or
+kontakt@latzerus.ch. Issues on this repository work too.
+
+## 🛡 Safety
 
 Read-only by design: the four tools return text, nothing else. No authentication, because there is nothing
-to authenticate — every byte it serves is public on latzerus.ch anyway. No cookies, no tracking, no
-logging of what you ask. It cannot touch anything on your machine.
+to authenticate — every byte it serves is public on latzerus.ch anyway. It cannot touch anything on your
+machine.
 
 ## 📜 License & attribution
 

@@ -3,6 +3,28 @@
 The server reports its version in `initialize` and in `server.json`; that version is what the
 MCP Registry lists. Dates are the deploy dates.
 
+## 1.1.0 — 2026-11-11
+
+The server version moves from 1.0.1 to 1.1.0 (`initialize`, `server.json`, MCP Registry).
+
+- **Tool annotations** on all four tools: `title`, `readOnlyHint: true`, `destructiveHint: false`,
+  `idempotentHint: true`, `openWorldHint: false`. Clients can run them without asking for confirmation, and
+  the Claude connector directory requires them.
+- **A search without hits is no longer an error.** `lernmodule_suchen` now returns `isError: false`,
+  `anzahl: 0` and a new `hinweis` field (also in the `outputSchema`). An empty or missing search term is
+  still an error, and so is an unknown slug in `lernmodul_lesen`.
+- **Icons:** four PNGs (96 and 256 px, light and dark background) under `/icons/`, served by the worker
+  itself and listed in `serverInfo.icons` and `server.json`. `serverInfo` also carries `websiteUrl`.
+- The `lernmodule_suchen` description now says the modules are German and search terms must be German, so an
+  assistant answering an English question translates before searching («discount» finds nothing, «Rabatt» three).
+- `server.json` description now says 150+ modules (81 characters, registry limit 100); the instructions too.
+- The info page links the privacy section `latzerus.ch/datenschutz/#mcp-server`.
+- Tests: `mcp-smoke.mjs` checks annotations, icons, version consistency and the empty search (15 checks).
+  `mcp-eval-set.json`: three cases updated for modules published since September (more pricing modules, a new
+  interview module); the search itself is unchanged, 40/40.
+
+Tool names, parameters and existing result fields are unchanged.
+
 ## Security headers — 2026-11-01 (server version stays 1.0.1)
 
 Every response now carries Strict-Transport-Security, Content-Security-Policy (`default-src 'none'`, inline

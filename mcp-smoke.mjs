@@ -96,3 +96,32 @@ console.log("\n--- CPU: warm vs. kalt ---");
 const t1 = Date.now();
 for (let i = 0; i < 20; i++) await call("lernmodule_suchen", { suchbegriff: "Preis verhandeln Rabatt" });
 console.log(`  20 warme Suchen: ${((Date.now() - t1) / 20).toFixed(1)} ms pro Anfrage (inkl. Fetch aus dem HTTP-Cache)`);
+
+console.log("\n--- 1.1.0: Annotations, Icons, leere Suche ---");
+{
+  const pruef = (ok, text) => console.log(`  ${ok ? "OK  " : "FAIL"} ${text}`);
+  const init = (await post({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18" } })).json.result;
+  pruef(init.serverInfo.version === "1.1.0", `serverInfo.version = ${init.serverInfo.version}`);
+  pruef((init.serverInfo.icons || []).length === 4, `serverInfo.icons = ${(init.serverInfo.icons || []).length}`);
+  const sj = await (await worker.fetch(new Request("https://mcp.latzerus.ch/.well-known/mcp/server.json"))).json();
+  pruef(sj.version === init.serverInfo.version, `server.json version = ${sj.version} (gleich wie serverInfo)`);
+  pruef(sj.description.length <= 100, `server.json description ${sj.description.length} Zeichen (max. 100)`);
+  for (const ic of init.serverInfo.icons) {
+    const res = await worker.fetch(new Request(ic.src));
+    const buf = new Uint8Array(await res.arrayBuffer());
+    const png = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+    pruef(res.status === 200 && png && res.headers.get("Content-Type") === "image/png", `${new URL(ic.src).pathname} → ${res.status}, ${buf.length} Bytes, PNG=${png}`);
+  }
+  const tools = (await post({ jsonrpc: "2.0", id: 2, method: "tools/list" })).json.result.tools;
+  for (const t of tools) {
+    const a = t.annotations || {};
+    pruef(a.readOnlyHint === true && a.destructiveHint === false && a.idempotentHint === true && a.openWorldHint === false && !!a.title,
+      `${t.name}: annotations ${JSON.stringify(a)}`);
+  }
+  const leer = (await call("lernmodule_suchen", { suchbegriff: "xyzqvw" })).json.result;
+  pruef(leer.isError === false && leer.structuredContent.anzahl === 0 && !!leer.structuredContent.hinweis, `leere Suche: isError=${leer.isError}, hinweis=${!!leer.structuredContent.hinweis}`);
+  const voll = (await call("lernmodule_suchen", { suchbegriff: "Einwand" })).json.result;
+  pruef(voll.isError === false && voll.structuredContent.anzahl > 0 && !("hinweis" in voll.structuredContent), `Suche «Einwand»: ${voll.structuredContent.anzahl} Treffer, ohne hinweis`);
+  const ohne = (await call("lernmodule_suchen", {})).json.result;
+  pruef(ohne.isError === true, `Suche ohne Suchbegriff bleibt Fehler: isError=${ohne.isError}`);
+}
